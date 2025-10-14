@@ -27,7 +27,6 @@ Cyber-crime complaints often arrive multiple times across portals (NCRP/NCFL) an
 
 ## Architecture
 
-
 ### System Overview
 ```mermaid
 flowchart LR
