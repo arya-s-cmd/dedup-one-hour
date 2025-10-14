@@ -30,12 +30,103 @@ Cyber-crime complaints often arrive multiple times across portals (NCRP/NCFL) an
 ### System Overview
 ```mermaid
 flowchart LR
-    A[Multi-source Complaints\n(NCRP/NCFL/Helpline/Web)] -->|ingest /complaints| B[FastAPI Service]
-    B -->|/dedupe/run| C[Dedupe Pipeline\nBlocking + Similarity + Clustering]
-    C -->|writes groups| D[(DB: complaints, dup_groups,\n group_members, decisions, audit_log)]
-    B <-->|/groups /decision /audit/export| D
+    A["Multi-source Complaints<br/>(NCRP · NCFL · Helpline · Web)"] -->|ingest /complaints| B[FastAPI Service]
+    B -->|/dedupe/run| C["Dedupe Pipeline<br/>Blocking · Similarity · Clustering"]
+    C -->|writes groups| D["DB: complaints, dup_groups,<br/>group_members, decisions, audit_log"]
+    B <-->|/groups · /decision · /audit/export| D
     E[React Reviewer UI] -->|HTTP JSON| B
-    E -.->|Export\nAudit JSON| D
+    E -.->|"Export Audit JSON"| D
+
+
+```markdown
+### Request Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    participant R as Reviewer UI
+    participant API as FastAPI
+    participant PIPE as Dedupe Pipeline
+    participant DB as DB (SQLite/Postgres)
+    R->>API: POST /dedupe/run
+    API->>PIPE: build candidates + score
+    PIPE->>DB: write dup_groups + group_members
+    API-->>R: 200 OK
+    R->>API: GET /groups?status=suggested
+    API->>DB: fetch groups + members
+    DB-->>API: rows
+    API-->>R: JSON groups
+    R->>API: POST /groups/{id}/decision
+    API->>DB: update status · set canonical_of
+    API->>DB: INSERT audit_log (hash-chained)
+    API-->>R: 200 OK
+
+
+```markdown
+### Data Model (ER)
+```mermaid
+erDiagram
+    complaints {
+      int id PK
+      string external_id
+      string name
+      string phone
+      string email
+      string timestamp
+      text   text
+      int    canonical_of
+    }
+    dup_groups {
+      int id PK
+      string created_at
+      string status
+      text   score_summary
+    }
+    group_members {
+      int id PK
+      int group_id FK
+      int complaint_id FK
+    }
+    decisions {
+      int id PK
+      int group_id FK
+      string actor
+      string decision
+      int target_canonical_id
+      string created_at
+    }
+    audit_log {
+      int id PK
+      string ts
+      string actor
+      string action
+      string entity_type
+      string entity_id
+      text before_json
+      text after_json
+      string prev_hash
+      string hash
+    }
+    dup_groups ||--o{ group_members : contains
+    complaints ||--o{ group_members : included_in
+    dup_groups ||--o{ decisions : has
+
+
+```markdown
+### Deployment (Dev/Prod)
+```mermaid
+flowchart TB
+  subgraph Dev [Dev (Docker Compose)]
+    W[web: Vite/React] -->|5173| Browser
+    API[api: FastAPI] -->|8000| Browser
+    API --- VOL[(Named Volume /data)]
+  end
+  subgraph Prod [Prod (Example)]
+    SSR["Static Hosting<br/>(Netlify/Vercel)"] --> Users
+    SRV["API Service<br/>(Render/VM/K8s)"] --> DB[(Postgres)]
+    SRV --> Blob[(Disk / S3)]
+    SSR -. VITE_API_BASE .-> SRV
+  end
+
 
 
 
