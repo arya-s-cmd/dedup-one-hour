@@ -27,52 +27,17 @@ Cyber-crime complaints often arrive multiple times across portals (NCRP/NCFL) an
 
 ## Architecture
 
-erDiagram
-    complaints {
-      int id PK
-      string external_id
-      string name
-      string phone
-      string email
-      string timestamp
-      text   text
-      int    canonical_of
-    }
-    dup_groups {
-      int id PK
-      string created_at
-      string status
-      text   score_summary
-    }
-    group_members {
-      int id PK
-      int group_id FK
-      int complaint_id FK
-    }
-    decisions {
-      int id PK
-      int group_id FK
-      string actor
-      string decision
-      int target_canonical_id
-      string created_at
-    }
-    audit_log {
-      int id PK
-      string ts
-      string actor
-      string action
-      string entity_type
-      string entity_id
-      text before_json
-      text after_json
-      string prev_hash
-      string hash
-    }
 
-    dup_groups ||--o{ group_members : contains
-    complaints ||--o{ group_members : included_in
-    dup_groups ||--o{ decisions : has
+### System Overview
+```mermaid
+flowchart LR
+    A[Multi-source Complaints\n(NCRP/NCFL/Helpline/Web)] -->|ingest /complaints| B[FastAPI Service]
+    B -->|/dedupe/run| C[Dedupe Pipeline\nBlocking + Similarity + Clustering]
+    C -->|writes groups| D[(DB: complaints, dup_groups,\n group_members, decisions, audit_log)]
+    B <-->|/groups /decision /audit/export| D
+    E[React Reviewer UI] -->|HTTP JSON| B
+    E -.->|Export\nAudit JSON| D
+
 
 
 
@@ -101,6 +66,7 @@ API docs: http://localhost:8000/docs
 In the UI: Run Deduplication → review groups → Approve / Keep Separate / Merge → Export Audit
 
 ### 2) Local dev
+'''bash
 cd backend
 python -m venv .venv && . .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
