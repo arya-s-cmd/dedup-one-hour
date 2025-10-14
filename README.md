@@ -52,6 +52,8 @@ UI: http://localhost:5173
 API docs: http://localhost:8000/docs
 In the UI: Run Deduplication → review groups → Approve / Keep Separate / Merge → Export Audit
 
+---
+
 ### 2) Local dev
 '''bash
 cd backend
@@ -66,6 +68,7 @@ npm install
 npm run dev  # opens on 5173
 # ensure VITE_API_BASE=http://localhost:8000 (Docker not required in local dev)
 
+---
 
 **a.** Want me to add a `render.yaml` + Netlify config so deploys happen on push?  
 **b.** Want a `BENCHMARKS.md` with the exact evaluation script and confusion matrix?
