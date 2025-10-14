@@ -55,7 +55,7 @@ In the UI: Run Deduplication → review groups → Approve / Keep Separate / Mer
 ---
 
 ### 2) Local dev
-'''bash
+```bash
 cd backend
 python -m venv .venv && . .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -68,7 +68,7 @@ npm install
 npm run dev  # opens on 5173
 # ensure VITE_API_BASE=http://localhost:8000 (Docker not required in local dev)
 
----
+
 
 **a.** Want me to add a `render.yaml` + Netlify config so deploys happen on push?  
 **b.** Want a `BENCHMARKS.md` with the exact evaluation script and confusion matrix?
