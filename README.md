@@ -27,34 +27,53 @@ Cyber-crime complaints often arrive multiple times across portals (NCRP/NCFL) an
 
 ## Architecture
 
-+----------------+ ingest +------------------+
-| Data sources | ----------------> | FastAPI (API) |
-| (NCRP/NCFL) | | /complaints |
-+----------------+ | /dedupe/run |
-| /groups |
-| /decision |
-| /audit/export |
-+---------+--------+
-|
-| SQLAlchemy / DB (SQLite by default)
-v
-+------------------+
-| Storage & Audit |
-| complaints |
-| dup_groups |
-| group_members |
-| decisions |
-| audit_log (*WORM|
-| hash-chained) |
-+---------+--------+
-^
-|
-fetch/decide |
-+------------------+ <------------------------+
-| React Reviewer |
-| (Vite dev server|
-| or static) |
-+------------------+
+erDiagram
+    complaints {
+      int id PK
+      string external_id
+      string name
+      string phone
+      string email
+      string timestamp
+      text   text
+      int    canonical_of
+    }
+    dup_groups {
+      int id PK
+      string created_at
+      string status
+      text   score_summary
+    }
+    group_members {
+      int id PK
+      int group_id FK
+      int complaint_id FK
+    }
+    decisions {
+      int id PK
+      int group_id FK
+      string actor
+      string decision
+      int target_canonical_id
+      string created_at
+    }
+    audit_log {
+      int id PK
+      string ts
+      string actor
+      string action
+      string entity_type
+      string entity_id
+      text before_json
+      text after_json
+      string prev_hash
+      string hash
+    }
+
+    dup_groups ||--o{ group_members : contains
+    complaints ||--o{ group_members : included_in
+    dup_groups ||--o{ decisions : has
+
 
 
 **Dedupe core**
@@ -69,10 +88,6 @@ fetch/decide |
 
 ---
 
-## Screenshots
-> _Drop screenshots or a short GIF here (UI list view, approve/merge flow, audit export)._
-
----
 
 ## Quickstart
 
@@ -85,7 +100,7 @@ UI: http://localhost:5173
 API docs: http://localhost:8000/docs
 In the UI: Run Deduplication → review groups → Approve / Keep Separate / Merge → Export Audit
 
-2) Local dev
+### 2) Local dev
 cd backend
 python -m venv .venv && . .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
